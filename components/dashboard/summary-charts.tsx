@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Transaction } from '@/lib/types';
-import { format, startOfDay, startOfWeek, startOfMonth, startOfYear, endOfDay, endOfWeek, endOfMonth, endOfYear, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, eachYearOfInterval, parseISO } from 'date-fns';
+import { format, startOfDay, startOfWeek, startOfMonth, startOfYear, endOfDay, endOfWeek, endOfMonth, endOfYear, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, eachYearOfInterval } from 'date-fns';
 
 type TimePeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -21,7 +21,7 @@ const aggregateData = (transactions: Transaction[], period: TimePeriod) => {
 
     const sortedTransactions = [...transactions].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const startDate = new Date(sortedTransactions[0].date);
-    const endDate = new Date();
+    const endDate = new Date(sortedTransactions[sortedTransactions.length - 1].date);
 
     let intervals;
     let formatString: string;
@@ -34,7 +34,7 @@ const aggregateData = (transactions: Transaction[], period: TimePeriod) => {
             groupByFn = (date) => format(startOfDay(date), 'yyyy-MM-dd');
             break;
         case 'weekly':
-            intervals = eachWeekOfInterval({ start: startOfWeek(startDate), end: endOfWeek(endDate) }, { weekStartsOn: 1 });
+            intervals = eachWeekOfInterval({ start: startOfWeek(startDate, { weekStartsOn: 1 }), end: endOfWeek(endDate, { weekStartsOn: 1 }) }, { weekStartsOn: 1 });
             formatString = 'MMM d';
             groupByFn = (date) => format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
             break;
@@ -69,7 +69,7 @@ const aggregateData = (transactions: Transaction[], period: TimePeriod) => {
     return Array.from(dataMap.values()).map(d => ({ ...d, profit: d.sales - d.expenses }));
 };
 
-export default function SummaryCharts({ transactions }: { transactions: Transaction[] }) {
+export default function SummaryCharts({ transactions, currency }: { transactions: Transaction[], currency: string }) {
     const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
 
     const chartData = useMemo(() => aggregateData(transactions, timePeriod), [transactions, timePeriod]);
@@ -77,6 +77,26 @@ export default function SummaryCharts({ transactions }: { transactions: Transact
     const totalSales = useMemo(() => transactions.filter(t => t.type === 'sale').reduce((sum, t) => sum + t.amount, 0), [transactions]);
     const totalExpenses = useMemo(() => transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0), [transactions]);
     const totalProfit = totalSales - totalExpenses;
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    }
+    
+    const formatYAxis = (value: number) => {
+        return new Intl.NumberFormat('en-US', {
+            notation: 'compact',
+            compactDisplay: 'short',
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 1
+        }).format(value);
+    }
 
     return (
         <Card>
@@ -86,15 +106,15 @@ export default function SummaryCharts({ transactions }: { transactions: Transact
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
                     <div className="p-4 rounded-lg bg-secondary">
                         <p className="text-sm text-muted-foreground">Total Sales</p>
-                        <p className="text-2xl font-bold text-primary">${totalSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p className="text-2xl font-bold text-primary">{formatCurrency(totalSales)}</p>
                     </div>
                     <div className="p-4 rounded-lg bg-secondary">
                         <p className="text-sm text-muted-foreground">Total Expenses</p>
-                        <p className="text-2xl font-bold text-accent">${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p className="text-2xl font-bold" style={{color: 'hsl(var(--chart-2))'}}>{formatCurrency(totalExpenses)}</p>
                     </div>
                      <div className="p-4 rounded-lg bg-secondary">
                         <p className="text-sm text-muted-foreground">Total Profit</p>
-                        <p className="text-2xl font-bold" style={{color: 'hsl(var(--chart-3))'}}>${totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p className="text-2xl font-bold" style={{color: 'hsl(var(--chart-3))'}}>{formatCurrency(totalProfit)}</p>
                     </div>
                 </div>
             </CardHeader>
@@ -107,27 +127,33 @@ export default function SummaryCharts({ transactions }: { transactions: Transact
                         <TabsTrigger value="yearly">Yearly</TabsTrigger>
                     </TabsList>
                     <TabsContent value={timePeriod}>
-                        <ChartContainer config={chartConfig} className="min-h-[250px] w-full mt-4">
-                            <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
-                                <CartesianGrid vertical={false} />
-                                <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
-                                <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`}/>
-                                <Tooltip
-                                    cursor={false}
-                                    content={<ChartTooltipContent
-                                        formatter={(value, name) => (
-                                        <div>
-                                            <div className="font-medium capitalize">{name}</div>
-                                            <div>{Number(value).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</div>
-                                        </div>
-                                        )}
-                                    />}
-                                />
-                                <Bar dataKey="sales" fill="var(--color-sales)" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="expenses" fill="var(--color-expenses)" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="profit" fill="var(--color-profit)" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ChartContainer>
+                        {chartData.length > 0 ? (
+                            <ChartContainer config={chartConfig} className="min-h-[250px] w-full mt-4">
+                                <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
+                                    <YAxis tickLine={false} axisLine={false} tickFormatter={formatYAxis}/>
+                                    <Tooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent
+                                            formatter={(value, name) => (
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-medium capitalize">{name}</span>
+                                                    <span className="text-sm">{formatCurrency(Number(value))}</span>
+                                                </div>
+                                            )}
+                                        />}
+                                    />
+                                    <Bar dataKey="sales" fill="var(--color-sales)" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="expenses" fill="var(--color-expenses)" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="profit" fill="var(--color-profit)" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ChartContainer>
+                        ) : (
+                            <div className="flex h-[290px] w-full items-center justify-center rounded-lg border border-dashed">
+                                <p className="text-muted-foreground">Add a transaction to see your summary chart.</p>
+                            </div>
+                        )}
                     </TabsContent>
                 </Tabs>
             </CardContent>
