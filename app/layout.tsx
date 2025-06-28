@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'ProfitView',
+  title: 'G-Expenses Calculator',
   description: 'Track your business expenses, sales, and profits.',
 };
 
