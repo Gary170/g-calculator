@@ -83,16 +83,16 @@ export default function SummaryCharts({ transactions }: { transactions: Transact
             <CardHeader>
                 <CardTitle>Financial Summary</CardTitle>
                 <CardDescription>An overview of your sales, expenses, and profits.</CardDescription>
-                <div className="flex justify-between items-baseline pt-4">
-                    <div className="text-center">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+                    <div className="p-4 rounded-lg bg-secondary">
                         <p className="text-sm text-muted-foreground">Total Sales</p>
                         <p className="text-2xl font-bold text-primary">${totalSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
-                    <div className="text-center">
+                    <div className="p-4 rounded-lg bg-secondary">
                         <p className="text-sm text-muted-foreground">Total Expenses</p>
                         <p className="text-2xl font-bold text-accent">${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
-                     <div className="text-center">
+                     <div className="p-4 rounded-lg bg-secondary">
                         <p className="text-sm text-muted-foreground">Total Profit</p>
                         <p className="text-2xl font-bold" style={{color: 'hsl(var(--chart-3))'}}>${totalProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
