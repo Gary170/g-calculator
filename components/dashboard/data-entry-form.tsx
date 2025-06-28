@@ -146,7 +146,7 @@ export default function DataEntryForm({ onAddTransaction, clientNames }: DataEnt
 
                     <div className="space-y-2">
                         <Label htmlFor="description">Description</Label>
-                        <Input id="description" {...form.register('description')} placeholder="e.g. Website development" />
+                        <Input id="description" {...form.register('description')} placeholder="Description" />
                         {form.formState.errors.description && <p className="text-sm font-medium text-destructive">{form.formState.errors.description.message}</p>}
                     </div>
 
@@ -159,7 +159,7 @@ export default function DataEntryForm({ onAddTransaction, clientNames }: DataEnt
                     {type === 'sale' && (
                         <div className="space-y-2">
                             <Label htmlFor="clientName">Client Name</Label>
-                            <Input id="clientName" {...form.register('clientName')} list="client-names" placeholder="e.g. Acme Inc."/>
+                            <Input id="clientName" {...form.register('clientName')} list="client-names" placeholder="Client Name"/>
                              <datalist id="client-names">
                                 {clientNames.map(name => <option key={name} value={name} />)}
                             </datalist>
@@ -171,7 +171,7 @@ export default function DataEntryForm({ onAddTransaction, clientNames }: DataEnt
                         <div className="space-y-2">
                             <Label htmlFor="category">Category</Label>
                             <div className="relative">
-                                <Input id="category" {...form.register('category')} placeholder="e.g. Office Supplies" />
+                                <Input id="category" {...form.register('category')} placeholder="Category" />
                                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                                     {isSuggesting ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> : <Wand2 className="h-5 w-5 text-muted-foreground" />}
                                 </div>
