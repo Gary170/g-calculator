@@ -8,7 +8,7 @@ export default function Home() {
         <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
           <div className="flex gap-2 items-center">
             <Logo />
-            <h1 className="text-2xl font-bold text-primary">ProfitView</h1>
+            <h1 className="text-2xl font-bold text-primary">G-Expenses Calculator</h1>
           </div>
         </div>
       </header>
