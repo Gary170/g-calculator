@@ -149,20 +149,20 @@ export default function DataEntryForm({ onAddTransaction }: DataEntryFormProps) 
 
                     <div className="space-y-2">
                         <Label htmlFor="description">Description</Label>
-                        <Input id="description" {...form.register('description')} placeholder="e.g., Website Development" />
+                        <Input id="description" {...form.register('description')} />
                         {form.formState.errors.description && <p className="text-sm font-medium text-destructive">{form.formState.errors.description.message}</p>}
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="amount">Amount</Label>
-                        <Input id="amount" type="number" step="0.01" {...form.register('amount')} placeholder="0.00" />
+                        <Input id="amount" type="number" step="0.01" {...form.register('amount')} />
                         {form.formState.errors.amount && <p className="text-sm font-medium text-destructive">{form.formState.errors.amount.message}</p>}
                     </div>
 
                     {type === 'sale' && (
                         <div className="space-y-2">
                             <Label htmlFor="clientName">Client Name</Label>
-                            <Input id="clientName" {...form.register('clientName')} placeholder="e.g., Innovate LLC" />
+                            <Input id="clientName" {...form.register('clientName')} />
                             {form.formState.errors.clientName && <p className="text-sm font-medium text-destructive">{form.formState.errors.clientName.message}</p>}
                         </div>
                     )}
@@ -171,7 +171,7 @@ export default function DataEntryForm({ onAddTransaction }: DataEntryFormProps) 
                         <div className="space-y-2">
                             <Label htmlFor="category">Category</Label>
                             <div className="relative">
-                                <Input id="category" {...form.register('category')} placeholder="e.g., Software" />
+                                <Input id="category" {...form.register('category')} />
                                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                                     {isSuggesting ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> : <Wand2 className="h-5 w-5 text-muted-foreground" />}
                                 </div>
