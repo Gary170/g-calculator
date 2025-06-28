@@ -8,8 +8,8 @@ import ClientView from './client-view';
 import CurrencySelector from './currency-selector';
 import { getLocalCurrency } from '@/lib/currencies';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { Download, Upload } from 'lucide-react';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Download, Upload, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
     AlertDialog,
@@ -29,6 +29,7 @@ export default function MainDashboard() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingTransactions, setPendingTransactions] = useState<Transaction[] | null>(null);
+  const [isClearDataDialogOpen, setIsClearDataDialogOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -153,6 +154,20 @@ export default function MainDashboard() {
     }
   };
 
+  const handleClearData = () => {
+    setTransactions([]);
+    try {
+      localStorage.removeItem('transactions');
+    } catch (error) {
+      console.error("Failed to clear transactions from localStorage", error);
+    }
+    setIsClearDataDialogOpen(false);
+    toast({
+      title: "Data Cleared",
+      description: "All transaction data has been removed.",
+    });
+  };
+
   const salesTransactions = useMemo(() => transactions.filter(t => t.type === 'sale'), [transactions]);
   const clientNames = useMemo(() => {
       const clientSet = new Set<string>();
@@ -191,6 +206,9 @@ export default function MainDashboard() {
             <Upload className="h-4 w-4" />
           </Button>
           <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
+          <Button variant="outline" size="icon" onClick={() => setIsClearDataDialogOpen(true)} title="Clear All Data">
+            <Trash2 className="h-4 w-4" />
+          </Button>
 
           <CurrencySelector selectedCurrency={currency} onCurrencyChange={setCurrency} />
 
@@ -205,6 +223,21 @@ export default function MainDashboard() {
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setPendingTransactions(null)}>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={confirmImport}>Yes, Import</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog open={isClearDataDialogOpen} onOpenChange={setIsClearDataDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete all of your transaction data.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setIsClearDataDialogOpen(false)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleClearData} className={buttonVariants({ variant: "destructive" })}>Yes, Clear Data</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
