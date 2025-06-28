@@ -44,9 +44,10 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface DataEntryFormProps {
     onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
+    clientNames: string[];
 }
 
-export default function DataEntryForm({ onAddTransaction }: DataEntryFormProps) {
+export default function DataEntryForm({ onAddTransaction, clientNames }: DataEntryFormProps) {
     const [type, setType] = useState<'sale' | 'expense'>('sale');
     const { toast } = useToast();
     const [isSuggesting, startSuggestionTransition] = useTransition();
@@ -56,7 +57,9 @@ export default function DataEntryForm({ onAddTransaction }: DataEntryFormProps) 
         defaultValues: {
             type: 'sale',
             description: '',
-            amount: 0,
+            date: new Date(),
+            clientName: '',
+            category: ''
         },
     });
 
@@ -68,13 +71,8 @@ export default function DataEntryForm({ onAddTransaction }: DataEntryFormProps) 
     useEffect(() => {
         const selectedType = form.watch('type');
         setType(selectedType);
-    }, [form.watch('type')]);
-    
-    useEffect(() => {
-        if (form.getValues("date") === undefined) {
-            form.setValue("date", new Date());
-        }
-    }, [form]);
+        form.clearErrors();
+    }, [form.watch('type'), form]);
 
     useEffect(() => {
         if (type === 'expense' && debouncedDescription && debouncedAmount > 0) {
@@ -95,12 +93,11 @@ export default function DataEntryForm({ onAddTransaction }: DataEntryFormProps) 
         onAddTransaction(values);
         toast({
             title: 'Transaction Added',
-            description: `${values.type.charAt(0).toUpperCase() + values.type.slice(1)} of $${values.amount} has been logged.`,
+            description: `${values.type.charAt(0).toUpperCase() + values.type.slice(1)} of ${values.amount} has been logged.`,
         });
         form.reset({
             type: values.type,
             description: '',
-            amount: 0,
             date: new Date(),
             clientName: '',
             category: ''
@@ -120,7 +117,7 @@ export default function DataEntryForm({ onAddTransaction }: DataEntryFormProps) 
                         render={({ field }) => (
                             <RadioGroup
                                 onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                value={field.value}
                                 className="flex space-x-4"
                             >
                                 <div className="flex items-center space-x-2">
@@ -149,20 +146,23 @@ export default function DataEntryForm({ onAddTransaction }: DataEntryFormProps) 
 
                     <div className="space-y-2">
                         <Label htmlFor="description">Description</Label>
-                        <Input id="description" {...form.register('description')} />
+                        <Input id="description" {...form.register('description')} placeholder="e.g. Website development" />
                         {form.formState.errors.description && <p className="text-sm font-medium text-destructive">{form.formState.errors.description.message}</p>}
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="amount">Amount</Label>
-                        <Input id="amount" type="number" step="0.01" {...form.register('amount')} />
+                        <Input id="amount" type="number" step="0.01" {...form.register('amount')} placeholder="0.00" />
                         {form.formState.errors.amount && <p className="text-sm font-medium text-destructive">{form.formState.errors.amount.message}</p>}
                     </div>
 
                     {type === 'sale' && (
                         <div className="space-y-2">
                             <Label htmlFor="clientName">Client Name</Label>
-                            <Input id="clientName" {...form.register('clientName')} />
+                            <Input id="clientName" {...form.register('clientName')} list="client-names" placeholder="e.g. Acme Inc."/>
+                             <datalist id="client-names">
+                                {clientNames.map(name => <option key={name} value={name} />)}
+                            </datalist>
                             {form.formState.errors.clientName && <p className="text-sm font-medium text-destructive">{form.formState.errors.clientName.message}</p>}
                         </div>
                     )}
@@ -171,7 +171,7 @@ export default function DataEntryForm({ onAddTransaction }: DataEntryFormProps) 
                         <div className="space-y-2">
                             <Label htmlFor="category">Category</Label>
                             <div className="relative">
-                                <Input id="category" {...form.register('category')} />
+                                <Input id="category" {...form.register('category')} placeholder="e.g. Office Supplies" />
                                 <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                                     {isSuggesting ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> : <Wand2 className="h-5 w-5 text-muted-foreground" />}
                                 </div>
