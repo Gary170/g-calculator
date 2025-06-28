@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculator</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { display: flex; justify-content: center; align-items: center; height: 100vh; background: #f5f5f5; margin: 0; }
+    .calculator { background: #222; padding: 20px; border-radius: 10px; width: 320px; }
+    .display { background: #000; color: #0f0; font-size: 2rem; padding: 10px; text-align: right; border-radius: 5px; margin-bottom: 10px; min-height: 60px; word-wrap: break-word; }
+    .buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    button { font-size: 1.2rem; padding: 20px; border: none; border-radius: 5px; cursor: pointer; background: #333; color: #fff; transition: background 0.2s; }
+    button:hover { background: #444; }
+    button.operator { background: #ff9500; }
+    button.operator:hover { background: #e08900; }
+    button.equal { background: #007aff; grid-column: span 2; }
+    button.equal:hover { background: #0064d6; }
+    button.zero { grid-column: span 2; }
+  </style>
+</head>
+<body>
+
+  <div class="calculator">
+    <div id="display" class="display">0</div>
+    <div class="buttons">
+      <button id="clear">C</button>
+      <button id="back">←</button>
+      <button class="operator">÷</button>
+      <button class="operator">×</button>
+
+      <button>7</button><button>8</button><button>9</button><button class="operator">−</button>
+      <button>4</button><button>5</button><button>6</button><button class="operator">+</button>
+      <button>1</button><button>2</button><button>3</button><button class="equal">=</button>
+      <button class="zero">0</button><button>.</button>
+    </div>
+  </div>
+
+  <script>
+    const display = document.getElementById('display');
+    let current = '0';
+    let previous = null;
+    let operator = null;
+    let resetNext = false;
+
+    function updateDisplay() {
+      display.textContent = current;
+    }
+
+    document.querySelectorAll('.buttons button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const value = btn.textContent;
+
+        if (btn.id === 'clear') {
+          current = '0'; previous = null; operator = null; resetNext = false;
+          updateDisplay();
+          return;
+        }
+
+        if (btn.id === 'back') {
+          if (!resetNext) {
+            current = current.length > 1 ? current.slice(0, -1) : '0';
+            updateDisplay();
+          }
+          return;
+        }
+
+        if (btn.classList.contains('operator')) {
+          handleOperator(value);
+          return;
+        }
+
+        if (btn.classList.contains('equal')) {
+          handleEquals();
+          return;
+        }
+
+        handleNumber(value);
+      });
+    });
+
+    function handleNumber(num) {
+      if (resetNext) {
+        current = num === '.' ? '0.' : num;
+        resetNext = false;
+      } else {
+        if (num === '.') {
+          if (!current.includes('.')) current += '.';
+        } else {
+          current = current === '0' ? num : current + num;
+        }
+      }
+      updateDisplay();
+    }
+
+    function handleOperator(op) {
+      if (operator && !resetNext) handleEquals();
+      previous = parseFloat(current);
+      operator = op;
+      resetNext = true;
+    }
+
+    function handleEquals() {
+      if (operator === null || resetNext) return;
+      const curr = parseFloat(current);
+      let result;
+      switch (operator) {
+        case '+': result = previous + curr; break;
+        case '−': result = previous - curr; break;
+        case '×': result = previous * curr; break;
+        case '÷': result = previous / curr; break;
+        default: return;
+      }
+      current = String(result);
+      operator = null;
+      resetNext = true;
+      updateDisplay();
+    }
+
+    updateDisplay();
+  </script>
+
+</body>
+</html>
