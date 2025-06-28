@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Transaction } from '@/lib/types';
-import { format, startOfDay, startOfWeek, startOfMonth, startOfYear, endOfDay, endOfWeek, endOfMonth, endOfYear, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, eachYearOfInterval } from 'date-fns';
+import { format, startOfDay, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 
 type TimePeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -19,55 +19,54 @@ const chartConfig = {
 const aggregateData = (transactions: Transaction[], period: TimePeriod) => {
     if (transactions.length === 0) return [];
 
-    const sortedTransactions = [...transactions].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    const startDate = new Date(sortedTransactions[0].date);
-    const endDate = new Date(sortedTransactions[sortedTransactions.length - 1].date);
+    const dataMap = new Map<string, { date: string; sales: number; expenses: number }>();
 
-    let intervals;
     let formatString: string;
-    let groupByFn: (date: Date) => string;
+    let getIntervalDate: (date: Date) => Date;
 
     switch (period) {
         case 'daily':
-            intervals = eachDayOfInterval({ start: startOfDay(startDate), end: endOfDay(endDate) });
             formatString = 'MMM d';
-            groupByFn = (date) => format(startOfDay(date), 'yyyy-MM-dd');
+            getIntervalDate = (date) => startOfDay(date);
             break;
         case 'weekly':
-            intervals = eachWeekOfInterval({ start: startOfWeek(startDate, { weekStartsOn: 1 }), end: endOfWeek(endDate, { weekStartsOn: 1 }) }, { weekStartsOn: 1 });
             formatString = 'MMM d';
-            groupByFn = (date) => format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+            getIntervalDate = (date) => startOfWeek(date, { weekStartsOn: 1 });
             break;
         case 'monthly':
-            intervals = eachMonthOfInterval({ start: startOfMonth(startDate), end: endOfMonth(endDate) });
             formatString = 'MMM yyyy';
-            groupByFn = (date) => format(startOfMonth(date), 'yyyy-MM');
+            getIntervalDate = (date) => startOfMonth(date);
             break;
         case 'yearly':
-            intervals = eachYearOfInterval({ start: startOfYear(startDate), end: endOfYear(endDate) });
             formatString = 'yyyy';
-            groupByFn = (date) => format(startOfYear(date), 'yyyy');
+            getIntervalDate = (date) => startOfYear(date);
             break;
     }
 
-    const dataMap = new Map<string, { date: string; sales: number; expenses: number }>();
-    
-    intervals.forEach(intervalDate => {
-        const key = groupByFn(intervalDate);
-        dataMap.set(key, { date: format(intervalDate, formatString), sales: 0, expenses: 0 });
-    });
-
     transactions.forEach(t => {
-        const key = groupByFn(new Date(t.date));
-        if (dataMap.has(key)) {
-            const entry = dataMap.get(key)!;
-            if (t.type === 'sale') entry.sales += t.amount;
-            else entry.expenses += t.amount;
+        const intervalDate = getIntervalDate(new Date(t.date));
+        const key = intervalDate.toISOString(); // Use ISO string for reliable key and sorting
+
+        if (!dataMap.has(key)) {
+            dataMap.set(key, { date: format(intervalDate, formatString), sales: 0, expenses: 0 });
+        }
+
+        const entry = dataMap.get(key)!;
+        if (t.type === 'sale') {
+            entry.sales += t.amount;
+        } else {
+            entry.expenses += t.amount;
         }
     });
 
-    return Array.from(dataMap.values()).map(d => ({ ...d, profit: d.sales - d.expenses }));
+    const sortedData = Array.from(dataMap.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(entry => entry[1]);
+
+
+    return sortedData.map(d => ({ ...d, profit: d.sales - d.expenses }));
 };
+
 
 export default function SummaryCharts({ transactions, currency }: { transactions: Transaction[], currency: string }) {
     const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
@@ -136,12 +135,7 @@ export default function SummaryCharts({ transactions, currency }: { transactions
                                     <Tooltip
                                         cursor={false}
                                         content={<ChartTooltipContent
-                                            formatter={(value, name) => (
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-medium capitalize">{name}</span>
-                                                    <span className="text-sm">{formatCurrency(Number(value))}</span>
-                                                </div>
-                                            )}
+                                            formatter={(value) => formatCurrency(Number(value))}
                                         />}
                                     />
                                     <Bar dataKey="sales" fill="var(--color-sales)" radius={[4, 4, 0, 0]} />
